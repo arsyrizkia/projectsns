@@ -127,9 +127,11 @@ async function executeJob(db: Db, job: ClaimedJob): Promise<void> {
       },
       progress: job.progress ?? {},
       saveProgress: async (patch) => {
+        // db.json (not a ::jsonb cast) — a cast makes the driver double-encode
+        // the patch into a jsonb string and `||` array-concats instead of merging
         await db`
           update publish_jobs
-          set progress = progress || ${JSON.stringify(patch)}::jsonb, updated_at = now()
+          set progress = progress || ${db.json(patch as never)}, updated_at = now()
           where id = ${job.id}
         `;
         Object.assign(job.progress, patch);
