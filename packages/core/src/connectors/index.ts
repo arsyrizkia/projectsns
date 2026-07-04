@@ -1,11 +1,16 @@
 import type { Platform } from "../types.js";
 import { FakeConnector } from "./fake.js";
+import { LinkedInConnector } from "./linkedin/index.js";
 import type { Connector } from "./types.js";
 
 export * from "./types.js";
 export { FakeConnector } from "./fake.js";
+export { LinkedInConnector, LINKEDIN_VERSION } from "./linkedin/index.js";
 
-const registry = new Map<Platform, Connector>([["fake", new FakeConnector()]]);
+const registry = new Map<Platform, Connector>([
+  ["fake", new FakeConnector()],
+  ["linkedin", new LinkedInConnector()],
+]);
 
 /** Real connectors register here as they land (Phase 1: linkedin, Phase 2: instagram, Phase 5: tiktok). */
 export function registerConnector(connector: Connector): void {
