@@ -9,32 +9,6 @@ create schema if not exists private;
 -- helpers
 -- ---------------------------------------------------------------------------
 
-create or replace function private.is_member(ws uuid)
-returns boolean
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select exists (
-    select 1 from workspace_members
-    where workspace_id = ws and user_id = auth.uid()
-  );
-$$;
-
-create or replace function private.is_owner(ws uuid)
-returns boolean
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select exists (
-    select 1 from workspace_members
-    where workspace_id = ws and user_id = auth.uid() and role = 'owner'
-  );
-$$;
-
 create or replace function private.set_updated_at()
 returns trigger
 language plpgsql
@@ -65,6 +39,34 @@ create table workspace_members (
   created_at timestamptz not null default now(),
   primary key (workspace_id, user_id)
 );
+
+-- membership helpers (defined after workspace_members exists — sql-language
+-- function bodies are parse-validated at creation time)
+create or replace function private.is_member(ws uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from workspace_members
+    where workspace_id = ws and user_id = auth.uid()
+  );
+$$;
+
+create or replace function private.is_owner(ws uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from workspace_members
+    where workspace_id = ws and user_id = auth.uid() and role = 'owner'
+  );
+$$;
 
 create table company_profiles (
   workspace_id uuid primary key references workspaces (id) on delete cascade,
