@@ -1,0 +1,26 @@
+[Unit]
+Description=ProjectSNS web (Next.js standalone)
+After=network.target
+
+[Service]
+Type=simple
+User=projectsns
+Group=projectsns
+# Next standalone output nests the monorepo layout — server.js lives here
+WorkingDirectory=/opt/projectsns/web/apps/web
+EnvironmentFile=/etc/projectsns.env
+Environment=PORT=3100
+Environment=HOSTNAME=127.0.0.1
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+
+# hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,26 @@
+[Unit]
+Description=ProjectSNS worker (publish queue, token refresh, analytics)
+After=network.target
+
+[Service]
+Type=simple
+User=projectsns
+Group=projectsns
+WorkingDirectory=/opt/projectsns/worker
+EnvironmentFile=/etc/projectsns.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+# let the worker drain the in-flight publish job on deploy
+TimeoutStopSec=300
+KillSignal=SIGTERM
+
+# hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

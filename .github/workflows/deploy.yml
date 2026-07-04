@@ -1,0 +1,70 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r typecheck
+      - run: pnpm -r test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build web (standalone)
+        run: pnpm --filter @projectsns/web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Build worker
+        run: pnpm --filter @projectsns/worker build
+
+      - name: Assemble artifacts
+        run: |
+          mkdir -p out/web out/worker
+          cp -r apps/web/.next/standalone/. out/web/
+          mkdir -p out/web/apps/web/.next/static out/web/apps/web/public
+          cp -r apps/web/.next/static/. out/web/apps/web/.next/static/
+          cp -r apps/web/public/. out/web/apps/web/public/
+          cp -r apps/worker/dist out/worker/dist
+          cp apps/worker/package.json out/worker/
+          cd out/worker && npm install --omit=dev --no-package-lock --ignore-scripts postgres node-cron
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Rsync + restart
+        run: |
+          rsync -az --delete out/web/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/projectsns/web/"
+          rsync -az --delete out/worker/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/projectsns/worker/"
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "sudo systemctl restart projectsns-web projectsns-worker"
