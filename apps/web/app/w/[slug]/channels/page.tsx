@@ -105,13 +105,12 @@ export default async function ChannelsPage({
         >
           Instagram (soon)
         </button>
-        <button
-          disabled
-          title="Phase 5"
-          className="cursor-not-allowed rounded-lg bg-zinc-200 px-4 py-2 text-sm font-medium text-zinc-400 dark:bg-zinc-800"
+        <a
+          href={`/api/oauth/tiktok/start?workspace=${workspace.slug}`}
+          className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90 dark:bg-white dark:text-black"
         >
-          TikTok (soon)
-        </button>
+          Connect TikTok
+        </a>
       </div>
     </div>
   );
