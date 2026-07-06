@@ -12,6 +12,7 @@
     "dev": "pnpm --parallel -r dev",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "publish:oss": "bash scripts/publish-oss.sh"
   }
 }
